@@ -26,18 +26,18 @@ Maomao 聚合电影🎬
 
 本程序完美支持 OpenWrt、群晖、威联通或任何带有 Docker 环境的 Linux 服务器。
 
-1. 登录终端
+登录终端
 
 使用 SSH 工具连接到您的软路由或 Linux 物理机。
 
-2. 执行一键安装脚本
+执行一键安装脚本
 
 直接复制以下整行命令并回车，脚本将自动拉取代码、构建镜像并在后台启动：
 
-bash <(curl -s [https://raw.githubusercontent.com/sillre/maomao/main/install_maomao.sh](https://raw.githubusercontent.com/sillre/maomao/main/install_maomao.sh))
+```bash <(curl -s [https://raw.githubusercontent.com/sillre/maomao/main/install_maomao.sh](https://raw.githubusercontent.com/sillre/maomao/main/install_maomao.sh))```
 
 
-3. 配置播放器
+配置播放器
 
 安装完成后，打开您的手机或电视播放器（推荐使用 VidHub 或 Infuse）：
 
