@@ -46,7 +46,7 @@
 bash <(curl -s https://raw.githubusercontent.com/sillre/maomao/main/install_maomao.sh)
 ```
 
-* **3.配置播放器**
+### 3. 配置播放器
 
 安装完成后，打开您的手机或电视播放器（网易爆米花、VidHub、Infuse、SenPlayer 等一切支持 WebDAV 的播放器）：
 
