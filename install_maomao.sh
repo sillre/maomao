@@ -21,7 +21,7 @@ if [ ! -s "app.py" ]; then
 fi
 echo "✅ 代码下载成功！"
 
-# 3. 自动生成 Dockerfile (修复了缺少 COPY 的问题)
+# 3. 自动生成 Dockerfile
 echo "[*] 正在生成 Dockerfile..."
 cat << 'EOF' > Dockerfile
 FROM python:3.9-alpine
@@ -32,8 +32,8 @@ EXPOSE 8080
 CMD ["python", "app.py"]
 EOF
 
-# 4. 自动生成 docker-compose.yml (修复了缩进和特殊字符问题)
-echo "[*] 正在生成 docker-compose.yml..."
+# 4. 自动生成 docker-compose.yml (✨ 已加入文件映射黑科技)
+echo "[*] 正在生成 docker-compose.yml (含热更新黑科技)..."
 cat << 'EOF' > docker-compose.yml
 version: '3'
 services:
@@ -45,6 +45,9 @@ services:
       - "8787:8080"
     environment:
       - TZ=Asia/Shanghai
+    volumes:
+      # 终极黑科技：直接将外面的 app.py 实时映射到容器内部
+      - ./app.py:/app/app.py
 EOF
 
 echo "[*] 环境文件生成完毕！"
@@ -63,3 +66,6 @@ echo "🎉 部署大功告成！"
 echo "📺 请在 VidHub 或 Infuse 中添加 WebDAV："
 echo "👉 地址: http://您的路由器IP:8787"
 echo "👉 账号密码: 留空即可"
+echo "-------------------------------------------------------"
+echo "💡 极客提示：未来想更新系统，只需用新版 app.py 覆盖当前目录下的文件，"
+echo "   然后执行命令: docker restart maomao 即可瞬间生效，无需重装！"
