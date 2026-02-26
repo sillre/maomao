@@ -1,14 +1,13 @@
-Maomao 聚合电影 🎬
+Maomao  🎬 (V6.9 版)
 
-可接入网易爆米花、VidHub、Infuse、SenPlayer
+可接入网易爆米花、VidHub、Infuse、SenPlayer 等一切支持 WebDAV 的播放器。
 
 基于 WebDAV 的极轻量级“无状态”影视聚合网关（专为 Apple TV / VidHub / Infuse 打造）。
 
-告别庞大的 NAS 硬盘阵列，抛弃复杂的阿里云盘/夸克网盘签到与防封号机制！Maomao TVBox 是一个纯 Python 编写的动态流媒体桥接中间件，只需 30MB 内存，即可让您的播放器拥有全网数万部最新、最高清的影视资源。
+告别庞大的 NAS 硬盘阵列，抛弃年付阿里云盘/夸克网盘！Maomao 是一个纯 Python 编写的动态流媒体桥接中间件，只需 30MB 内存，即可让您的播放器瞬间拥有全网近 30,000 部 最新、最高清的精选影视资源。
 
 告别 xiaoya、115、阿里云、夸克、syncnext。
-
-注：由于源站限制，目前并非 4K 片源。
+注：由于源站限制，目前主打 1080P 高清秒播，暂非全量 4K 片源。
 
 ✨ 核心黑科技 (Features)
 
