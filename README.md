@@ -43,5 +43,17 @@
 直接复制以下整行命令并回车，脚本将自动拉取代码、构建镜像并在后台启动：
 
 ```bash
-bash <(curl -s [https://raw.githubusercontent.com/sillre/maomao/main/install_maomao.sh](https://raw.githubusercontent.com/sillre/maomao/main/install_maomao.sh))
----
+bash <(curl -s https://raw.githubusercontent.com/sillre/maomao/main/install_maomao.sh)
+```
+
+* **3.配置播放器**
+
+安装完成后，打开您的手机或电视播放器（网易爆米花、VidHub、Infuse、SenPlayer 等一切支持 WebDAV 的播放器）：
+
+导航至 添加文件源 -> 添加 WebDAV (或 HTTP)
+
+地址 / URL：http://您的设备IP:8787 (例如 http://192.168.1.1:8787)
+
+用户名：留空（如果报错请尝试填写 admin）
+
+密码：留空
