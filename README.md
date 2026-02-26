@@ -23,6 +23,14 @@
 * **🐳 极度轻量：** 专为 OpenWrt 等弱性能软路由设计，Docker 容器常驻内存极低。
 
 ---
+## 📜 声明与协议
+
+- **开源协议**：本项目基于 **MIT License** 协议开源。
+- **技术研究**：本项目仅作为技术学习与 HTTP/WebDAV 协议研究之用。
+- **免责声明**：程序本身不存储、不提供、不分发任何影视实体文件。所有数据均通过 JIT 技术来自互联网公开接口即时代理。用户在使用过程中请遵守当地法律法规。
+
+
+
 
 ## 🚀 部署指南 (一键安装)
 
@@ -36,3 +44,4 @@
 
 ```bash
 bash <(curl -s [https://raw.githubusercontent.com/sillre/maomao/main/install_maomao.sh](https://raw.githubusercontent.com/sillre/maomao/main/install_maomao.sh))
+---
