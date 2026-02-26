@@ -13,51 +13,53 @@ cd ${WORK_DIR}
 
 # 2. 自动从你的 GitHub 拉取最新代码
 echo "[*] 正在从 GitHub 下载核心引擎代码..."
-# 这里已经为你替换成了真实的 GitHub 地址！
 wget -qO app.py https://raw.githubusercontent.com/sillre/maomao/main/app.py
 
 if [ ! -s "app.py" ]; then
-	    echo "❌ 下载代码失败！请检查网络，或确认 app.py 已经上传到 GitHub。"
-	        exit 1
+    echo "❌ 下载代码失败！请检查网络，或确认 app.py 已经上传到 GitHub。"
+    exit 1
 fi
 echo "✅ 代码下载成功！"
 
-# 3. 自动生成 Dockerfile
+# 3. 自动生成 Dockerfile (修复了缺少 COPY 的问题)
 echo "[*] 正在生成 Dockerfile..."
 cat << 'EOF' > Dockerfile
 FROM python:3.9-alpine
 WORKDIR /app
 RUN pip install --no-cache-dir flask requests beautifulsoup4
+COPY app.py /app/app.py
 EXPOSE 8080
 CMD ["python", "app.py"]
 EOF
 
-# 4. 自动生成 docker-compose.yml
+# 4. 自动生成 docker-compose.yml (修复了缩进和特殊字符问题)
 echo "[*] 正在生成 docker-compose.yml..."
 cat << 'EOF' > docker-compose.yml
 version: '3'
 services:
   maomao:
-      build: .
-          container_name: maomao
-	      restart: always
-	          ports:
-		        - "8787:8080"
-			    environment:
-			          - TZ=Asia/Shanghai
-				  EOF
+    build: .
+    container_name: maomao
+    restart: always
+    ports:
+      - "8787:8080"
+    environment:
+      - TZ=Asia/Shanghai
+EOF
 
-				  echo "[*] 环境文件生成完毕！"
-				  echo ""
-				  echo "======================================================="
-				  echo " 🚀 正在全自动构建并启动容器，请稍候..."
-				  echo "======================================================="
+echo "[*] 环境文件生成完毕！"
+echo ""
+echo "======================================================="
+echo " 🚀 正在全自动构建并启动容器，请稍候..."
+echo "======================================================="
 
-				  # 5. 自动启动！
-			  docker-compose up -d --build
+# 5. 自动启动
+# 先停止可能存在的旧容器，防止冲突
+docker-compose down 2>/dev/null
+docker-compose up -d --build
 
-			  echo ""
-			  echo "🎉 部署大功告成！"
-			  echo "📺 请在 VidHub 或 Infuse 中添加 WebDAV："
-			  echo "👉 地址: http://您的路由器IP:8787"
-			  echo "👉 账号密码: 留空即可"
+echo ""
+echo "🎉 部署大功告成！"
+echo "📺 请在 VidHub 或 Infuse 中添加 WebDAV："
+echo "👉 地址: http://您的路由器IP:8787"
+echo "👉 账号密码: 留空即可"
