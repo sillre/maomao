@@ -1,14 +1,14 @@
-Maomao 聚合电影🎬
+Maomao 聚合电影 🎬
 
-可接入网易爆米花、vidhub、infuse、senplayer
+可接入网易爆米花、VidHub、Infuse、SenPlayer
 
-基于 WebDAV 的极轻量级“无状态”影视聚合网关（专为 Apple TV / VidHub / Infuse 打造），
+基于 WebDAV 的极轻量级“无状态”影视聚合网关（专为 Apple TV / VidHub / Infuse 打造）。
 
 告别庞大的 NAS 硬盘阵列，抛弃复杂的阿里云盘/夸克网盘签到与防封号机制！Maomao TVBox 是一个纯 Python 编写的动态流媒体桥接中间件，只需 30MB 内存，即可让您的播放器拥有全网数万部最新、最高清的影视资源。
 
-告别xiaoya、115、阿里云、夸克、syncnext
+告别 xiaoya、115、阿里云、夸克、syncnext。
 
-缺点就是并非4k片源
+注：由于源站限制，目前并非 4K 片源。
 
 ✨ 核心黑科技 (Features)
 
@@ -26,18 +26,18 @@ Maomao 聚合电影🎬
 
 本程序完美支持 OpenWrt、群晖、威联通或任何带有 Docker 环境的 Linux 服务器。
 
-登录终端
+1. 登录终端
 
 使用 SSH 工具连接到您的软路由或 Linux 物理机。
 
-执行一键安装脚本
+2. 执行一键安装脚本
 
 直接复制以下整行命令并回车，脚本将自动拉取代码、构建镜像并在后台启动：
 
-```bash <(curl -s [https://raw.githubusercontent.com/sillre/maomao/main/install_maomao.sh](https://raw.githubusercontent.com/sillre/maomao/main/install_maomao.sh))```
+```bash <(curl -s https://raw.githubusercontent.com/sillre/maomao/main/install_maomao.sh)```
 
 
-配置播放器
+3. 配置播放器
 
 安装完成后，打开您的手机或电视播放器（推荐使用 VidHub 或 Infuse）：
 
@@ -45,13 +45,11 @@ Maomao 聚合电影🎬
 
 地址 / URL：http://您的设备IP:8787 (例如 http://192.168.1.1:8787)
 
-用户名：留空（留空出错那就留admin）
+用户名：留空（如果报错请尝试填写 admin）
 
 密码：留空
 
-连接成功后，尽情享受您的无限私人影院吧！🍿
-
-直接扫库就拥有海报墙了
+连接成功后，直接扫库即可拥有精美海报墙，尽情享受您的无限私人影院吧！🍿
 
 ⚠️ 避坑指南：播放器设置建议
 
