@@ -44,7 +44,7 @@
 直接复制以下整行命令并回车，脚本将自动拉取代码、构建镜像并在后台启动：
 
 ```bash
-curl -s https://raw.githubusercontent.com/sillre/maomao/main/install_maomao.sh
+curl -s https://raw.githubusercontent.com/sillre/maomao/main/install_maomao.sh | bash
 ```
 
 ### 3. 配置播放器
