@@ -1,17 +1,16 @@
 # ==========================================
-# 版本: WebDAV 影视聚合引擎 V6.9 (最终完善版)
+# 版本: WebDAV 影视聚合引擎 V7.3 (终极形态版)
 # 
 # 【历史版本变更记录】
-# - V6.0: 引入 AI 自动探针，自动剔除死链、超时、失效域名。
-# - V6.5: 解除 500 部限制，采用深度分页架构，总容量扩充至近 30,000 部。
-# - V6.6: 引入“黑白双名单”机制，只允许分类带“片/剧/电影”的资源放行，彻底绞杀综艺和短剧。
-# - V6.7: “免豆瓣热榜”引入 pg 深度分页抓取，容量从几十部暴增至近千部。
-# - V6.8: 修复豆瓣缓存键值遗漏 t_type 导致“最新电影”与“最新剧集”混淆碰撞的 Bug。
+# - V6.9: 修复剧集空载超时问题，延时极速压缩。
+# - V7.0: 洗流引擎引入目录频次指纹，彻底物理删除压制/切片广告。
+# - V7.1: 新增“无缝切源弹夹”。
+# - V7.2: 引入“画质权重打分引擎”，4K/1080P/蓝光强制排前，枪版/TS强制垫底。
 #
-# 【V6.9 当前更新内容】: 
-#   1. 修复“最新开播剧集”无法获取的问题：豆瓣 TV 类无“最新”标签，修正为“热门”+ sort=time。
-#   2. 优化 PROPFIND 超时：将抓取延时从 2.5s 压缩至 0.4-0.8s，防止 VidHub 等待超 10s 断开连接。
-#   3. 升级主缓存文件名为 douban_cache_v6.json，强行清空旧的空载缓存。
+# 【V7.3 当前更新内容】: 
+#   1. 引入“Time-Lock 时间锁与双击切源”引擎。
+#   2. 解决续播痛点：播放超过 60 秒后，自动固化锁定当前源站，下次续播绝不乱切，保证进度和画质连贯。
+#   3. 操作革新：若遇卡顿需要切源，只需“退出视频，并在 60 秒内再次点击播放”，系统即刻为您切换下一个顶级源。
 # ==========================================
 
 import os
@@ -31,7 +30,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 app = Flask(__name__)
 
 # ==========================================
-# ⚙️ 超大备胎库 (自动测试，死的丢弃，活的选用)
+# ⚙️ 超大备胎库
 # ==========================================
 MASTER_SOURCES = {
     "非凡": "http://cj.ffzyapi.com/api.php/provide/vod/",
@@ -62,11 +61,9 @@ MASTER_SOURCES = {
 
 ACTIVE_SOURCES = {}
 
-# 💎 海量垂类矩阵 (总计近 30000 部)
 LIBRARY_CATEGORIES = {
     "🔥 全网源站实时热榜 (免豆瓣)": {"type": "cms_hot"},
     "🆕 最新上线电影": {"type": "movie", "tag": "最新", "sort": "time"},
-    # 【V6.9 修复】豆瓣TV没有"最新"标签，改为"热门"并按时间排序即可获取最新剧集
     "🆕 最新开播剧集": {"type": "tv", "tag": "热门", "sort": "time"},
     "🎬 热门电影总榜": {"type": "movie", "tag": "热门", "sort": "recommend"},
     "🏆 豆瓣高分神作": {"type": "movie", "tag": "豆瓣高分", "sort": "recommend"},
@@ -81,10 +78,11 @@ LIBRARY_CATEGORIES = {
 }
 
 DOUBAN_LOCK = threading.Lock()
-# 【V6.9 更新】修改主缓存文件名，彻底抛弃之前因为标签错误导致的空载数据
 CACHE_FILE = "douban_cache_v6.json" 
 DOUBAN_CACHE = {}
+
 TV_EPISODES_CACHE = {}
+MOVIE_STREAM_CACHE = {}
 
 if os.path.exists(CACHE_FILE):
     try:
@@ -163,7 +161,6 @@ def fetch_cms_hot_list():
                         black_keywords = ["解说", "速看", "预告", "分钟", "短剧", "花絮", "盘点", "合集", 
                                           "福利", "伦理", "综艺", "记录", "纪录", "动漫", "动画", "体育", 
                                           "音乐", "其他", "写真", "微电", "盲盒", "头条", "B站", "抖音", "快手"]
-                        
                         if any(x in name for x in black_keywords) or any(x in t_name for x in black_keywords): 
                             continue
                             
@@ -200,15 +197,11 @@ def fetch_douban_chunk(tag, is_movie, offset=0, count=250, sort_method="recommen
         urls = [f"https://movie.douban.com/j/search_subjects?type={t_type}&tag={urllib.parse.quote(tag)}&sort={sort_method}&page_limit=50&page_start={i}" for i in range(offset, offset + count, 50)]
         results, seen = [], set()
         
-        print(f"\n[*] 🌊 [后台建库] 正在抓取豆瓣 {t_type} 类的 {tag} (第{offset+1}到{offset+count}部) ...")
         for url in urls:
             try:
-                # 【V6.9 核心优化】延时压缩至 0.4-0.8 秒，总耗时控制在 4 秒内，防止播放器 PROPFIND 超时断连
                 time.sleep(random.uniform(0.4, 0.8))
                 r = requests.get(url, headers={'User-Agent': get_random_ua(), 'Referer': 'https://movie.douban.com/'}, timeout=8)
-                if r.status_code == 403: 
-                    print(" [!] 触发限流，避险中...")
-                    return ["豆瓣接口限制_请使用免豆瓣或稍后刷新"]
+                if r.status_code == 403: return ["豆瓣接口限制_请使用免豆瓣或稍后刷新"]
                 if r.status_code == 200:
                     for i in r.json().get('subjects', []):
                         name = re.sub(r'[\\/*?:"<>|]', "", i.get('title', '')).strip()
@@ -220,14 +213,23 @@ def fetch_douban_chunk(tag, is_movie, offset=0, count=250, sort_method="recommen
             DOUBAN_CACHE[cache_key] = results
             save_cache()
             return results
-            
-        # 如果豆瓣确实没有返回数据（例如非法tag组合）
-        print(" [!] 警告：豆瓣 API 未返回任何数据。")
         return ["该分类豆瓣暂无数据_或接口异常"]
 
 # ==========================================
-# 2. 洗流与搜索引擎
+# 2. 洗流与搜索引擎 
 # ==========================================
+def get_video_quality_score(url, vod_name=""):
+    text = (url + " " + vod_name).lower()
+    score = 10 
+    if '4k' in text or '2160' in text: score += 40
+    elif '1080' in text: score += 30
+    elif '蓝光' in text or 'bd' in text: score += 25
+    elif '720' in text: score += 20
+    elif 'hd' in text or '超清' in text or '高清' in text: score += 15
+    if 'ts' in text or 'tc' in text or '枪版' in text or '抢先' in text or '韩版' in text:
+        score -= 50
+    return score
+
 def clean_m3u8_stream(m3u8_url):
     try:
         r = requests.get(m3u8_url, headers={'User-Agent': get_random_ua()}, timeout=8, verify=False)
@@ -242,13 +244,15 @@ def clean_m3u8_stream(m3u8_url):
         ts_urls = [line if line.startswith('http') else f"{base_path}/{line}" for line in lines if not line.startswith('#') and line.strip()]
         if not ts_urls: return content
         
-        main_domain = Counter([urllib.parse.urlparse(u).netloc for u in ts_urls]).most_common(1)[0][0]
-        clean_lines, has_vod_tag, i = [], False, 0
+        dir_paths = [u.rsplit('/', 1)[0] for u in ts_urls]
+        dir_counts = Counter(dir_paths)
+        valid_dirs = {d for d, c in dir_counts.items() if c > (len(ts_urls) * 0.02) or c > 10}
+        if not valid_dirs: valid_dirs = {dir_counts.most_common(1)[0][0]}
         
+        clean_lines, has_vod_tag, i = [], False, 0
         while i < len(lines):
             line = lines[i].strip()
-            if not line:
-                i += 1; continue
+            if not line: i += 1; continue
             if line.startswith('#EXT-X-PLAYLIST-TYPE'):
                 has_vod_tag = True; clean_lines.append(line)
             elif line.startswith('#EXTINF'):
@@ -257,7 +261,7 @@ def clean_m3u8_stream(m3u8_url):
                 if i < len(lines):
                     ts_url = lines[i].strip()
                     ts_url = ts_url if ts_url.startswith('http') else f"{base_path}/{ts_url}"
-                    if urllib.parse.urlparse(ts_url).netloc == main_domain:
+                    if ts_url.rsplit('/', 1)[0] in valid_dirs:
                         clean_lines.extend([extinf_line, ts_url])
             elif line.startswith('#EXTM3U') or line.startswith('#EXT-X-VERSION') or line.startswith('#EXT-X-TARGETDURATION') or line.startswith('#EXT-X-MEDIA-SEQUENCE'):
                 clean_lines.append(line)
@@ -297,24 +301,35 @@ def search_single_api(api_url, keyword):
     except: return []
 
 def get_movie_stream(keyword):
-    with concurrent.futures.ThreadPoolExecutor(max_workers=len(ACTIVE_SOURCES)) as executor:
-        futures = [executor.submit(search_single_api, url, keyword) for url in ACTIVE_SOURCES.values()]
-        for future in concurrent.futures.as_completed(futures):
-            for vod in future.result():
-                if keyword not in vod.get('vod_name', ''): continue
-                for group in vod.get('vod_play_url', '').split('$$$'):
-                    if '.m3u8' in group or '.mp4' in group:
-                        for ep in group.split('#'):
-                            ep_url = ep.split('$', 1)[1] if '$' in ep else ep
-                            if check_playability_and_duration(ep_url): return ep_url
-    return None
+    if keyword not in MOVIE_STREAM_CACHE:
+        seen_urls = set()
+        url_scores = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(ACTIVE_SOURCES)) as executor:
+            futures = [executor.submit(search_single_api, url, keyword) for url in ACTIVE_SOURCES.values()]
+            for future in concurrent.futures.as_completed(futures):
+                for vod in future.result():
+                    if keyword not in vod.get('vod_name', ''): continue
+                    for group in vod.get('vod_play_url', '').split('$$$'):
+                        if '.m3u8' in group or '.mp4' in group:
+                            for ep in group.split('#'):
+                                ep_url = ep.split('$', 1)[1] if '$' in ep else ep
+                                if ep_url not in seen_urls:
+                                    seen_urls.add(ep_url)
+                                    score = get_video_quality_score(ep_url, vod.get('vod_name', ''))
+                                    url_scores.append((score, ep_url))
+        
+        if url_scores:
+            url_scores.sort(key=lambda x: x[0], reverse=True)
+            sorted_urls = [u for s, u in url_scores]
+            MOVIE_STREAM_CACHE[keyword] = {"urls": sorted_urls, "index": 0, "last_time": 0}
+            
+    return MOVIE_STREAM_CACHE.get(keyword)
 
 def get_tv_episodes(keyword):
     episodes_dict = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(ACTIVE_SOURCES)) as executor:
         futures = {executor.submit(search_single_api, url, keyword): name for name, url in ACTIVE_SOURCES.items()}
         for future in concurrent.futures.as_completed(futures):
-            source_name = futures[future]
             for vod in future.result():
                 if keyword not in vod.get('vod_name', ''): continue
                 for group in vod.get('vod_play_url', '').split('$$$'):
@@ -322,13 +337,29 @@ def get_tv_episodes(keyword):
                         for ep in group.split('#'):
                             if '$' in ep:
                                 ep_name, ep_url = ep.split('$', 1)
+                                nums = re.findall(r'\d+', ep_name)
+                                # 彻底修复 Python 3.9 的 f-string 报错
                                 safe_ep_name = re.sub(r'[\\/*?:"<>|]', "", ep_name).strip()
-                                episodes_dict[f"[{source_name}] {keyword}_{safe_ep_name}.mp4"] = ep_url
-                        return episodes_dict 
+                                std_name = f"第{nums[-1].zfill(2)}集.mp4" if nums else f"{safe_ep_name}.mp4"
+                                
+                                if std_name not in episodes_dict:
+                                    episodes_dict[std_name] = {"url_scores": [], "seen_urls": set(), "index": 0, "last_time": 0}
+                                
+                                if ep_url not in episodes_dict[std_name]["seen_urls"]:
+                                    episodes_dict[std_name]["seen_urls"].add(ep_url)
+                                    score = get_video_quality_score(ep_url, vod.get('vod_name', ''))
+                                    episodes_dict[std_name]["url_scores"].append((score, ep_url))
+
+    for std_name in episodes_dict:
+        episodes_dict[std_name]["url_scores"].sort(key=lambda x: x[0], reverse=True)
+        episodes_dict[std_name]["urls"] = [u for s, u in episodes_dict[std_name]["url_scores"]]
+        del episodes_dict[std_name]["url_scores"]
+        del episodes_dict[std_name]["seen_urls"]
+        
     return episodes_dict
 
 # ==========================================
-# 3. WebDAV 路由 (海量深潜架构)
+# 3. WebDAV 路由
 # ==========================================
 def generate_propfind_xml(items):
     xml = ['<?xml version="1.0" encoding="utf-8" ?>', '<D:multistatus xmlns:D="DAV:">']
@@ -360,13 +391,11 @@ def webdav_handler(path):
         items = []
         depth = request.headers.get('Depth', '1')
 
-        # 根目录：展示十几大分类
         if len(parts) == 0:
             items.append({'path': '/', 'name': 'Root', 'is_dir': True})
             if depth != '0':
                 for cat in LIBRARY_CATEGORIES.keys(): items.append({'path': f"/{cat}", 'name': cat, 'is_dir': True})
 
-        # 一级目录：生成 10 个深度分页文件夹
         elif len(parts) == 1 and parts[0] in LIBRARY_CATEGORIES:
             items.append({'path': decoded_path, 'name': parts[0], 'is_dir': True})
             if depth != '0':
@@ -381,7 +410,6 @@ def webdav_handler(path):
                         folder_name = f"{prefix} Top {start_idx}-{end_idx}"
                         items.append({'path': f"{decoded_path}/{folder_name}", 'name': folder_name, 'is_dir': True})
 
-        # 二级目录：提取数据
         elif len(parts) == 2 and parts[0] in LIBRARY_CATEGORIES:
             items.append({'path': decoded_path, 'name': parts[1], 'is_dir': True})
             if depth != '0':
@@ -401,7 +429,6 @@ def webdav_handler(path):
                         if cat_config['type'] == 'movie': items.append({'path': f"{decoded_path}/{name}.mp4", 'name': f"{name}.mp4", 'is_dir': False})
                         else: items.append({'path': f"{decoded_path}/{name}", 'name': name, 'is_dir': True})
 
-        # 三级目录：如果是电视剧，点进去展开集数
         elif len(parts) == 3:
             if decoded_path.endswith('.mp4'):
                 items.append({'path': decoded_path, 'name': parts[-1], 'is_dir': False})
@@ -413,7 +440,7 @@ def webdav_handler(path):
                     episodes = TV_EPISODES_CACHE[tv_name]
                     if not episodes: items.append({'path': f"{decoded_path}/未找到该源或时长过短.mp4", 'name': "未找到该源或时长过短.mp4", 'is_dir': False})
                     else:
-                        for ep_name in episodes.keys(): items.append({'path': f"{decoded_path}/{ep_name}", 'name': ep_name, 'is_dir': False})
+                        for ep_name in sorted(episodes.keys()): items.append({'path': f"{decoded_path}/{ep_name}", 'name': ep_name, 'is_dir': False})
 
         elif len(parts) == 4 and decoded_path.endswith('.mp4'):
             items.append({'path': decoded_path, 'name': parts[-1], 'is_dir': False})
@@ -421,22 +448,47 @@ def webdav_handler(path):
 
         return Response(generate_propfind_xml(items), status=207, mimetype='application/xml')
 
+    # 【V7.3 核心：Time-Lock 固化续播与双击切源】
     if request.method in ['GET', 'HEAD']:
         if decoded_path.endswith('.mp4'):
             parent_dir = parts[-2]
             file_name = parts[-1]
-            m3u8_url = TV_EPISODES_CACHE.get(parent_dir, {}).get(file_name)
+            m3u8_url = None
             
-            if not m3u8_url:
+            ep_data = TV_EPISODES_CACHE.get(parent_dir, {}).get(file_name)
+            if not ep_data:
                 movie_name = file_name.replace('.mp4', '')
-                m3u8_url = get_movie_stream(movie_name)
+                ep_data = get_movie_stream(movie_name)
                 
+            if ep_data and ep_data.get("urls"):
+                urls = ep_data["urls"]
+                last_time = ep_data.get("last_time", 0)
+                now = time.time()
+                
+                # 判断用户是在“续播”还是在“请求切源”
+                # 如果用户距离上次点击不足 60 秒，说明遇到了卡顿在强制切源
+                is_switching = (last_time > 0 and (now - last_time) < 60)
+                
+                # 如果切源，从下一个节点开始找；如果是续播，从记录的稳固节点找
+                check_start = (ep_data["index"] + 1) % len(urls) if is_switching else ep_data["index"]
+                
+                for i in range(len(urls)):
+                    curr_idx = (check_start + i) % len(urls)
+                    test_url = urls[curr_idx]
+                    
+                    if check_playability_and_duration(test_url):
+                        ep_data["index"] = curr_idx   # 固化稳固源
+                        ep_data["last_time"] = now    # 更新播放时间锁
+                        m3u8_url = test_url
+                        break
+                        
             if m3u8_url: return redirect(f"/proxy/m3u8?url={urllib.parse.quote(m3u8_url)}", code=302) 
+            return Response("所有节点均不可用或已被过滤", status=404)
 
     return Response("Method Not Allowed", status=405)
 
 if __name__ == '__main__':
     print("="*75)
-    print(f" 🌍 WebDAV 影视终极引擎 V6.9 (最终完善版) 启动就绪！")
+    print(f" 🌍 WebDAV 影视终极引擎 V7.3 (固化源站与画质优选版) 启动就绪！")
     print("="*75)
     app.run(host='0.0.0.0', port=8080, debug=False)
