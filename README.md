@@ -1,4 +1,4 @@
-# Maomao 🎬 (V7.3 版)
+# Maomao 🎬 (V1.0.0 正式版)
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![Docker](https://img.shields.io/badge/Docker-Supported-blue.svg)
