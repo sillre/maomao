@@ -1,93 +1,90 @@
 #!/bin/bash
-# maomao 影视聚合一键部署脚本 (V1.0.0 版)
-# 适用环境：OpenWrt / Linux / 各种 NAS
+# ==========================================
+# Maomao WebDAV 影视引擎 一键安装部署脚本
+# 版本: V1.0.3 (开源满血版)
+# ==========================================
 
 echo "======================================================="
-echo " 🎬 正在为您部署 maomao 聚合影视库 ..."
+echo " 🚀 开始安装 Maomao WebDAV 影视聚合引擎 V1.0.3"
 echo "======================================================="
 
 # 1. 环境自检
 if ! command -v docker &> /dev/null || ! command -v docker-compose &> /dev/null; then
     echo "❌ 严重错误：未检测到 docker 或 docker-compose！"
-    echo "💡 请先在您的系统 / 路由器 / NAS 中安装 Docker 环境后再运行本脚本。"
+    echo "💡 请先在您的系统中安装 Docker 环境后再运行本脚本。"
     exit 1
 fi
 
-# 2. 智能工作目录探测 (防套娃核心逻辑)
-CURRENT_DIR_NAME=$(basename "$(pwd)")
-if [ "$CURRENT_DIR_NAME" = "maomao" ]; then
-    # 如果用户已经在名为 maomao 的目录下了，就直接原地安装
-    WORK_DIR="$(pwd)"
-    echo "[*] 检测到已在 maomao 目录，将执行原地覆盖升级..."
-else
-    # 否则，在当前目录下新建 maomao 文件夹
-    WORK_DIR="$(pwd)/maomao"
-    mkdir -p "${WORK_DIR}"
-    echo "[*] 已创建全新工作目录: ${WORK_DIR}"
-fi
-cd "${WORK_DIR}"
+# 2. 交互式配置 TMDB KEY
+echo -e "\n-------------------------------------------------------"
+echo "🌟 【可选配置】: TMDB API Key"
+echo "如果您拥有 TMDB API Key，系统每天会自动为您抓取全网最新上映的影视数据。"
+echo "如果您没有，请直接按回车跳过，系统将完美使用自带的「纯净万部离线片库」！"
+read -p "👉 请输入您的 TMDB API Key (按回车跳过): " USER_TMDB_KEY
+echo "-------------------------------------------------------"
 
-# 3. 下载核心代码 (加入国内 Github 加速节点)
-echo "[*] 正在通过高速通道下载核心引擎代码..."
-wget -qO app.py https://ghproxy.net/https://raw.githubusercontent.com/sillre/maomao/main/app.py
+# 3. 创建工作目录
+INSTALL_DIR="$(pwd)/maomao-webdav"
+mkdir -p "$INSTALL_DIR"
+cd "$INSTALL_DIR"
+
+GITHUB_RAW_URL="https://raw.githubusercontent.com/sillre/maomao/main"
+
+echo -e "\n[*] 正在下载核心引擎代码..."
+wget -qO app.py "$GITHUB_RAW_URL/app.py"
+
+echo "[*] 正在下载万部离线预置片库 (免配置核心)..."
+wget -qO tmdb_massive_lib_v7.json "$GITHUB_RAW_URL/tmdb_massive_lib_v7.json"
 
 if [ ! -s "app.py" ]; then
-    echo "❌ 下载代码失败！请检查网络，或尝试开启科学上网。"
+    echo "❌ 下载核心代码失败！请检查网络连接或尝试开启代理。"
     exit 1
 fi
-echo "✅ 代码下载成功！"
 
-# 4. 自动生成 Dockerfile (锁定国内镜像源)
-echo "[*] 正在生成 Dockerfile..."
-cat << 'EOF' > Dockerfile
-FROM python:3.9-alpine
-WORKDIR /app
-RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple flask requests
-COPY app.py /app/app.py
-EXPOSE 8080
-CMD ["python", "app.py"]
-EOF
+# 4. 动态生成 Docker 配置文件
+echo "[*] 正在为您动态生成 Docker 配置文件..."
 
-# 5. 自动生成 docker-compose.yml (开启热更新映射)
-echo "[*] 正在生成 docker-compose.yml (含热更新黑科技)..."
-cat << 'EOF' > docker-compose.yml
-version: '3'
+# 巧妙处理空字符串的情况
+ENV_TMDB=""
+if [ -n "$USER_TMDB_KEY" ]; then
+    ENV_TMDB="- TMDB_KEY=${USER_TMDB_KEY}"
+    echo "✅ 已注入 TMDB API Key，【每日自动进化模式】已就绪！"
+else
+    echo "✅ 未检测到 Key，【内置万部离线片库模式】已启用，开箱即用！"
+fi
+
+cat << EOF > docker-compose.yml
+version: '3.8'
+
 services:
-  maomao:
-    build: .
-    container_name: maomao
-    restart: always
+  maomao-webdav:
+    image: python:3.9-slim
+    container_name: maomao-webdav
+    working_dir: /app
+    volumes:
+      - .:/app
     ports:
       - "8787:8080"
     environment:
       - TZ=Asia/Shanghai
-    volumes:
-      - ./app.py:/app/app.py
+      ${ENV_TMDB}
+    command: >
+      bash -c "pip install -q flask requests urllib3 && python app.py"
+    restart: unless-stopped
 EOF
 
-echo "[*] 环境文件生成完毕！"
-echo ""
-echo "======================================================="
-echo " 🚀 正在全自动构建并启动容器，请稍候..."
-echo " ⏳ (受国内网络影响，拉取 Python 环境可能需要 1-3 分钟，请勿关闭窗口)"
-echo "======================================================="
-
-# 6. 自动启动
+# 5. 启动容器
+echo -e "\n[*] 正在拉取 Python 环境并启动 Docker 容器 (可能需要 1-2 分钟)..."
 docker-compose down 2>/dev/null
-docker-compose up -d --build
+docker-compose up -d
 
-# 7. 结果校验
 if [ $? -eq 0 ]; then
-    echo ""
-    echo "🎉 部署大功告成！"
-    echo "📺 请在 VidHub 或 Infuse 中添加 WebDAV："
-    echo "👉 地址: http://您的路由器IP:8787"
-    echo "👉 账号密码: 留空即可"
-    echo "-------------------------------------------------------"
-    echo "💡 极客提示：未来想更新系统，只需用新版 app.py 覆盖当前目录下的文件，"
-    echo "   然后执行命令: docker restart maomao 即可瞬间生效，无需重装！"
+    echo "======================================================="
+    echo "🎉 安装圆满完成！您的个人影视中枢已在运行中。"
+    echo "📺 请在 Apple TV / 电脑播放器 (VidHub, Infuse 等) 中添加 WebDAV："
+    echo "   👉 地址: http://您的设备IP:8787"
+    echo "   👉 账号/密码: 无需填写，直接连接"
+    echo "======================================================="
 else
-    echo ""
-    echo "❌ 启动失败！通常是因为 Docker Hub 镜像拉取超时导致。"
-    echo "💡 建议方案：请在您的路由器后台配置 Docker 国内镜像加速器后重试。"
+    echo "❌ 启动失败！通常是因为 Docker 镜像拉取超时，请检查网络。"
 fi
