@@ -65,6 +65,6 @@ curl -s https://raw.githubusercontent.com/sillre/maomao/main/install_maomao.sh |
 
 ### 🛠️ 更新指南
 
-老用户请重新执行一次一键安装命令以获取  Maomao 🎬 (V1.0.0 正式版)
+老用户请重新执行一次一键安装命令以获取  Maomao 
 
 无需漫长的 build 重构，1秒钟瞬间生效，立刻享受您的终极万部级私人影院！🍿
