@@ -77,3 +77,7 @@ curl -s https://raw.githubusercontent.com/sillre/maomao/main/install_maomao.sh |
 老用户请重新执行一次一键安装命令以获取  Maomao 
 
 无需漫长的 build 重构，1秒钟瞬间生效，立刻享受您的终极万部级私人影院！🍿
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=sillre/maomao&type=date&legend=top-left)](https://www.star-history.com/#sillre/maomao&type=date&legend=top-left)
