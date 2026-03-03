@@ -1,26 +1,27 @@
 name: 模拟测试 maomao 安装脚本
 
-# 触发条件：当你把代码 push 到 main 分支时，自动开始跑测试
 on:
   push:
     branches:
       - main
-      # 如果你有 dev 分支，也可以加在这里： - dev
 
 jobs:
   test-install:
-    # 告诉 GitHub 给你分配一台最新的 Ubuntu 虚拟机
     runs-on: ubuntu-latest 
 
     steps:
-      # 第一步：把你的最新代码拉取到这台虚拟机里
       - name: 检出项目代码
         uses: actions/checkout@v4
 
-      # 第二步：给你的安装脚本赋予运行权限
+      # 🌟 新增的步骤：给这台虚拟机安装 Docker 和 docker-compose
+      - name: 准备 Docker 环境
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+          sudo systemctl start docker
+
       - name: 赋予脚本执行权限
         run: chmod +x install_maomao.sh
 
-      # 第三步：运行脚本！(如果脚本需要 root 权限，可以在前面加上 sudo)
       - name: 跑起来看看会不会报错
         run: sudo ./install_maomao.sh
