@@ -6,7 +6,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![Docker](https://img.shields.io/badge/Docker-Supported-blue.svg)](https://www.docker.com/)
-[![Release](https://img.shields.io/badge/Release-V1.0.3_开源满血版-orange.svg)]()
+[![Release](https://img.shields.io/badge/Release-V1.0.4_稳定版-orange.svg)]()
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 专为 **Apple TV / VidHub / Infuse / 网易爆米花** 打造的终极万部级私人影院解决方案。
@@ -20,7 +20,14 @@
 
 *注：由于源站限制，目前主打 1080P 高清秒播，暂非全量 4K 片源。*
 
-## ✨ V1.0.3 核心黑科技 
+## ✨ V1.0.4 核心特性（完整变更见 [CHANGELOG.md](./CHANGELOG.md)）
+
+* 🖥️ **内置 Web 实时监控控制台 (`/console`)**
+    浏览器访问 `http://您的设备IP:8787/console` 即可实时查看搜片、测速与播放透传日志（最近 800 条）。
+    > ⚠️ **安全提醒**：控制台默认免密，**仅限局域网内网使用，切勿将 8787 端口暴露至公网**。
+
+* 🚀 **剧集动态集数 + 历史源持久化 (`play_history.json`)**
+    进入剧集目录按真实源动态生成 `S01E01` 规范集数列表，并持久化记忆历史可用源；同时修复电影 `[0001-0500]` 分页误触发搜索与上游接口 `NoneType` 崩溃问题。
 
 * ⚡️ **动态能效比测速探针**
     **彻底击碎晚高峰卡顿魔咒！** 首创秒表测速机制。当您点击播放时，系统并发向全网发射 HEAD 探针，不仅测量真实切片体积（防假高清），更计算网络延迟。以 `(体积/延迟)` 的能效比作为最终排名，物理剔除“假死/超慢”的 CDN 节点。
